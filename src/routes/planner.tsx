@@ -74,7 +74,7 @@ function Planner() {
   };
   const replan = () => {
     const missed = getState().tasks.filter((t) => t.status !== "done" && (t.status === "missed" || isOverdue(t.due)));
-    if (!missed.length) return toast("Nothing missed — your plan is on track.");
+    if (!missed.length) { toast("Nothing missed — your plan is on track."); return; }
     missed.sort((a, b) => b.impact - a.impact).forEach((t, i) => {
       updateTask(t.id, { status: "todo", due: i < 2 ? today() : addDays(1), quadrant: i < 2 ? "do" : "schedule", rationale: `Replanned: was due ${fmtDate(t.due)}. ${i < 2 ? "Highest impact, moved to today." : "Moved to tomorrow to protect today's capacity."}` });
       addToCalendar(t, i < 2 ? 0 : 1);
@@ -129,7 +129,7 @@ function Planner() {
 function QuickAdd() {
   const [v, setV] = useState("");
   const cur = useStore((s) => s.currentProjectId);
-  const add = () => { if (!v.trim()) return; addTasks([{ id: uid("t"), title: v.trim(), projectId: cur, priority: "medium", due: addDays(2), owner: people[0], effort: 1, impact: 3, status: "todo", quadrant: "schedule", dependsOn: [], origin: "manual" }]); setV(""); toast.success("Task added"); };
+  const add = () => { if (!v.trim()) return; addTasks([{ id: uid("t"), title: v.trim(), projectId: cur, priority: "medium", due: addDays(2), owner: people[0] ?? "Unassigned", effort: 1, impact: 3, status: "todo", quadrant: "schedule", dependsOn: [], origin: "manual" }]); setV(""); toast.success("Task added"); };
   return <form onSubmit={(e) => { e.preventDefault(); add(); }} className="flex gap-1"><Input value={v} onChange={(e) => setV(e.target.value)} placeholder="Quick add task" className="h-9 w-40 sm:w-56" /><Button size="icon" variant="outline" type="submit" aria-label="Add task"><Plus className="h-4 w-4" /></Button></form>;
 }
 
@@ -165,7 +165,7 @@ function Hierarchy({ tasks, compact, editable, onRemove }: { tasks: Task[]; comp
                         {onRemove && <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Remove from draft" onClick={() => onRemove(t.id)}><X className="h-3.5 w-3.5" /></Button>}
                       </div>
                       {(t.rationale || blockers.length > 0 || t.sourceRef) && <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                        {blockers.length > 0 && <span className="flex items-center gap-1"><GitBranch className="h-3 w-3" />Blocked by “{blockers[0].title}” — finish that first</span>}
+                        {blockers.length > 0 && <span className="flex items-center gap-1"><GitBranch className="h-3 w-3" />Blocked by “{blockers[0]?.title}” — finish that first</span>}
                         {t.sourceRef && <Link to={t.origin === "research" ? "/research" : "/meetings"} className="flex items-center gap-1 underline-offset-2 hover:underline"><Link2 className="h-3 w-3" />From {t.origin}: {t.sourceRef.slice(0, 50)}</Link>}
                         {t.rationale && <span>{t.rationale}</span>}
                       </div>}

@@ -13,7 +13,7 @@ import { addDays, fmtDate, today } from "@/lib/dates";
 import { people } from "@/lib/seed";
 
 export const Route = createFileRoute("/meetings")({
-  validateSearch: (s: Record<string, unknown>) => ({ id: typeof s.id === "string" ? s.id : undefined }),
+  validateSearch: (s: Record<string, unknown>): { id?: string | undefined } => ({ id: typeof s["id"] === "string" ? s["id"] : undefined }),
   head: () => ({
     meta: [
       { title: "Meeting Notes · Workmate AI" },
@@ -57,8 +57,8 @@ function MeetingsPage() {
     finally { setLoading(null); }
   };
 
-  const createTasks = () => {
-    if (!m?.result?.actions.length) return toast.error("No action items to convert.");
+  const createTasks = () => { 
+    if (!m?.result?.actions.length) { toast.error("No action items to convert."); return; }
     const tasks: Task[] = m.result.actions.map((a) => ({ id: uid("t"), title: a.text, projectId: m.projectId, priority: a.deadline && a.deadline <= addDays(2) ? "high" : "medium", due: a.deadline || addDays(5), owner: a.owner, effort: 2, impact: 3, status: "todo", quadrant: a.deadline && a.deadline <= addDays(2) ? "do" : "schedule", dependsOn: [], origin: "meeting", sourceRef: m.title }));
     addTasks(tasks); logActivity("meeting", `${tasks.length} tasks created from ${m.title}`, "/planner");
     toast.success(`${tasks.length} tasks added to the planner`, { action: { label: "View", onClick: () => navigate({ to: "/planner" }) } });

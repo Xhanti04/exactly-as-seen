@@ -24,7 +24,7 @@ const RISK = /\b(worried|concern|risk|blocked|hasn't|not tracked|need sign-off|d
 
 function resolveDeadline(s: string) {
   const m = s.match(DEADLINE); if (!m) return "";
-  const w = m[1].toLowerCase();
+  const w = (m[1] ?? "").toLowerCase();
   const days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
   const d = days.findIndex((x) => w.includes(x));
   if (d >= 0) { let diff = (d - new Date().getDay() + 7) % 7 || 7; if (w.startsWith("next")) diff += 7; return addDays(diff); }
@@ -38,7 +38,7 @@ function findOwner(line: string, speaker?: string) {
   const named = people.find((p) => new RegExp(`\\b${p.split(" ")[0]}\\b`, "i").test(strip(line)));
   if (named) return named;
   if (/^(i|i'll|i will)\b/i.test(strip(line)) && speaker) return people.find((p) => p.startsWith(speaker)) ?? speaker;
-  const m = line.match(/^([A-Z][a-z]+)\s+(?:will|to)\b/); if (m) return people.find((p) => p.startsWith(m[1])) ?? m[1];
+  const m = line.match(/^([A-Z][a-z]+)\s+(?:will|to)\b/); if (m) return people.find((p) => p.startsWith(m[1] ?? "")) ?? m[1] ?? "Unassigned";
   return "Unassigned";
 }
 
@@ -58,14 +58,14 @@ export function generateMeeting(title: string, notes: string): MeetingResult {
     }
     for (const s of sentences(line.replace(/^[A-Z][a-z]+:\s*/, ""))) {
       if (DECISION.test(s)) decisions.push(cap(strip(s)));
-      else if (ACTION.test(s) && !/\?$/.test(s)) actions.push({ id: uid("ai"), text: cap(strip(s).replace(/^(i'll|i will|\w+ will|\w+ to)\s+/i, "")), owner: findOwner(s, sp), deadline: resolveDeadline(s) });
+      else if (ACTION.test(s) && !/\?$/.test(s)) actions.push({ id: uid("ai"), text: cap(strip(s).replace(/^(i'll|i will|\w+ will|\w+ to)\s+/i, "")), owner: findOwner(s, sp) ?? "Unassigned", deadline: resolveDeadline(s) });
       if (RISK.test(s)) inferred.push(`Follow up on: "${strip(s)}" — flagged as a possible risk, not a decision.`);
     }
   }
   if (!actions.length && inferred.length) inferred.push("No explicit action items were stated. Consider assigning an owner to each open risk above.");
   const kws = topK(keywords(notes), 5);
   const speakers = [...speakerMap.entries()].map(([name, e]) => ({ name, words: e.words, sentiment: Math.max(-1, Math.min(1, (e.pos - e.neg) / Math.max(1, e.pos + e.neg))) }));
-  const summary = `${title || "This meeting"} covered ${kws.slice(0, 3).join(", ") || "general updates"}${kws.length > 3 ? ` and ${kws[3]}` : ""}. ${speakers.length ? `${speakers.length} participants contributed; ${[...speakers].sort((a, b) => b.words - a.words)[0].name} spoke most.` : ""} ${decisions.length} decision${decisions.length === 1 ? " was" : "s were"} recorded and ${actions.length} action item${actions.length === 1 ? "" : "s"} assigned${inferred.length ? `, with ${inferred.filter((i) => i.startsWith("Follow")).length} open concern(s) worth tracking` : ""}.`.replace(/\s+/g, " ").trim();
+  const summary = `${title || "This meeting"} covered ${kws.slice(0, 3).join(", ") || "general updates"}${kws.length > 3 ? ` and ${kws[3]}` : ""}. ${speakers.length ? `${speakers.length} participants contributed; ${[...speakers].sort((a, b) => b.words - a.words)[0]?.name} spoke most.` : ""} ${decisions.length} decision${decisions.length === 1 ? " was" : "s were"} recorded and ${actions.length} action item${actions.length === 1 ? "" : "s"} assigned${inferred.length ? `, with ${inferred.filter((i) => i.startsWith("Follow")).length} open concern(s) worth tracking` : ""}.`.replace(/\s+/g, " ").trim();
   const nk = new Set(keywords(notes));
   const related = pastMeetings.map((m) => ({ id: m.id, title: m.title, date: m.date, overlap: m.text.split(" ").filter((w) => nk.has(w)) })).filter((m) => m.overlap.length >= 2).sort((a, b) => b.overlap.length - a.overlap.length).slice(0, 3);
   return { summary, decisions, inferred, actions, related, speakers, email: draftEmail(title, decisions, actions), generatedAt: new Date().toISOString() };
@@ -133,7 +133,7 @@ export function generatePlan(goalsText: string, projectId: string, horizon: "day
     const short = goal.replace(/^(ship|launch|reduce|write|research|evaluate|hire)\s+(the\s+)?/i, "").slice(0, 48);
     let prev: string | undefined;
     ms.forEach((m, mi) => {
-      TASKS[m].forEach((tpl, ti) => {
+      (TASKS[m] ?? []).forEach((tpl, ti) => {
         const id = uid("t");
         const step = mi * 2 + ti;
         const spread = horizon === "day" ? 0 : Math.min(6, step);
@@ -143,8 +143,8 @@ export function generatePlan(goalsText: string, projectId: string, horizon: "day
         const urgent = spread <= 1; const important = impact >= 3;
         const quadrant: Quadrant = urgent && important ? "do" : important ? "schedule" : urgent ? "delegate" : "drop";
         out.push({
-          id, title: tpl.replace("{g}", short.toLowerCase()), projectId, priority, due: addDays(spread), owner: people[(gi + step) % people.length],
-          effort, impact, status: "todo", quadrant, dependsOn: prev ? [prev] : [], goal, milestone: m, origin: "planner",
+          id, title: tpl.replace("{g}", short.toLowerCase()), projectId, priority, due: addDays(spread), owner: people[(gi + step) % people.length] ?? "Unassigned",
+          effort: effort ?? 2, impact, status: "todo", quadrant, dependsOn: prev ? [prev] : [], goal, milestone: m, origin: "planner",
           rationale: `${priority === "high" ? "High priority" : "Lower priority"}: impact ${impact}/5 for ${effort}h effort${prev ? "; waits on the previous step" : "; can start now"}.`,
         });
         prev = id;
