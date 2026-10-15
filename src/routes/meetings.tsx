@@ -13,7 +13,7 @@ import { addDays, fmtDate, today } from "@/lib/dates";
 import { people } from "@/lib/seed";
 
 export const Route = createFileRoute("/meetings")({
-  validateSearch: (s: Record<string, unknown>): { id?: string } => ({ id: typeof s["id"] === "string" ? s["id"] : undefined }),
+  validateSearch: (s: Record<string, unknown>): { id?: string | undefined } => ({ id: typeof s["id"] === "string" ? s["id"] : undefined }),
   head: () => ({
     meta: [
       { title: "Meeting Notes · Workmate AI" },
