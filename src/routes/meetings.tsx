@@ -58,7 +58,7 @@ function MeetingsPage() {
   };
 
   const createTasks = () => { 
-    if (!m?.result?.actions.length) return toast.error("No action items to convert.");
+    if (!m?.result?.actions.length) { toast.error("No action items to convert."); return; }
     const tasks: Task[] = m.result.actions.map((a) => ({ id: uid("t"), title: a.text, projectId: m.projectId, priority: a.deadline && a.deadline <= addDays(2) ? "high" : "medium", due: a.deadline || addDays(5), owner: a.owner, effort: 2, impact: 3, status: "todo", quadrant: a.deadline && a.deadline <= addDays(2) ? "do" : "schedule", dependsOn: [], origin: "meeting", sourceRef: m.title }));
     addTasks(tasks); logActivity("meeting", `${tasks.length} tasks created from ${m.title}`, "/planner");
     toast.success(`${tasks.length} tasks added to the planner`, { action: { label: "View", onClick: () => navigate({ to: "/planner" }) } });
