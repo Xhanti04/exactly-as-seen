@@ -262,7 +262,7 @@ function CalendarView({ tasks }: { tasks: Task[] }) {
                     </div>))}
                 </div>);
             })}
-          </>))}
+          </Fragment>))}
         </div>
       </div>
     </div>
