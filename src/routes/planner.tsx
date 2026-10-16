@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState, type DragEvent } from "react";
+import { Fragment, useMemo, useState, type DragEvent } from "react";
 import { Sparkle, CalendarPlus, FolderInput, RotateCcw, GitBranch, Link2, Trash2, Plus, ListChecks, X } from "lucide-react";
 import { CartesianGrid, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis, ZAxis, ReferenceLine } from "recharts";
 import { toast } from "sonner";
@@ -249,7 +249,7 @@ function CalendarView({ tasks }: { tasks: Task[] }) {
         <div className="grid min-w-[640px]" style={{ gridTemplateColumns: "48px repeat(5, 1fr)" }}>
           <div />
           {[0, 1, 2, 3, 4].map((d) => <div key={d} className="pb-2 text-center text-xs font-medium text-muted-foreground">{dayLabel(d)}</div>)}
-          {HOURS.map((h) => (<>
+          {HOURS.map((h) => (<Fragment key={h}>
             <div key={`h${h}`} className="pr-2 text-right text-[11px] text-muted-foreground" style={{ height: 44 }}>{h}:00</div>
             {[0, 1, 2, 3, 4].map((d) => {
               const k = `${d}-${h}`; const here = blocks.filter((b) => b.day === d && b.start === h);
@@ -262,7 +262,7 @@ function CalendarView({ tasks }: { tasks: Task[] }) {
                     </div>))}
                 </div>);
             })}
-          </>))}
+          </Fragment>))}
         </div>
       </div>
     </div>
